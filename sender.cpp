@@ -23,10 +23,111 @@ int main(int argc, char **argv) {
 
   // TODO: connect to server
 
+  Connection conn;
+
+  conn.connect(server_hostname, server_port);
+  if (!conn.is_open()) {
+    std::cerr << "Failed to connect to server\n";
+    return 1;
+  }
+
   // TODO: send slogin message
+
+  Message slogin_msg(TAG_SLOGIN, username);
+  if (!conn.send(slogin_msg)) {
+    std::cerr << "Failed to send rlogin message\n";
+    return 1;
+  }
+
+  Message response;
+  if (!conn.receive(response)) {
+    std::cerr << "Failed to receive slogin response\n";
+    return 1;
+  }
+
+  if (response.tag == TAG_ERR) {
+    std::cerr << response.data << "\n";
+    return 1;
+  }
+
+  if (response.tag != TAG_OK) {
+    std::cerr << "Unexpected response to slogin\n";
+    return 1;
+  }
 
   // TODO: loop reading commands from user, sending messages to
   //       server as appropriate
+  std::string input;
+  while (true) {
+
+    std::cout << "> ";
+
+    if (!std::getline(std::cin, input)) {
+      std::cout << "\nEOF detected, exiting.\n";
+      break;
+    }
+
+    if (input.size() <= 0) continue;
+
+    trim(input);
+    if (input[0]=='/') {
+      std::string command;
+      std::string arg;
+
+      size_t space = input.find(' ');
+      if (space == std::string::npos) {
+        command = input.substr(1);
+      } else {
+        command = input.substr(1, space-1);
+        arg = input.substr(space+1);
+      }
+
+      if (command == "join") {
+        Message join(TAG_JOIN, arg);
+        conn.send(join);
+        conn.receive(response);
+
+        if (response.tag == TAG_ERR) {
+          std::cerr << response.data << "\n";
+        }
+        continue;
+      }
+
+      if (command == "leave") {
+        Message leave(TAG_LEAVE, "");
+        conn.send(leave);
+        conn.receive(response);
+
+        if (response.tag == TAG_ERR) {
+          std::cerr << response.data << "\n";
+        }
+        continue;
+      }
+
+      if (command == "quit") {
+        Message quit(TAG_QUIT, "");
+        conn.send(quit);
+        conn.receive(response);
+
+        if (response.tag == TAG_ERR) {
+          std::cerr << response.data << "\n";
+        }
+        return 0;
+      }
+
+      std::cerr << "'" << command << "' is not a valid command\n";
+      continue;
+
+    } 
+
+    Message sendall(TAG_SENDALL, input);
+    conn.send(sendall);
+    conn.receive(response);
+
+    if (response.tag == TAG_ERR) {
+      std::cerr << response.data << "\n";
+    }
+  }
 
   return 0;
 }
