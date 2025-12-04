@@ -62,8 +62,7 @@ Message *MessageQueue::dequeue() {
 
   pthread_mutex_lock(&m_lock);
 
-  msg = m_messages.front();
-
+  Message *msg = m_messages.front();
   m_messages.pop_front();
 
   pthread_mutex_unlock(&m_lock);
