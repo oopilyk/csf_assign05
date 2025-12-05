@@ -1,4 +1,4 @@
-Sample README.txt
 
-Eventually your report about how you implemented thread synchronization
-in the server should go here
+
+
+Our thread synchronization is implemented through...
