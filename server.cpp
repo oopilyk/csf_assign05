@@ -43,7 +43,9 @@ void *worker(void *arg) {
   // Read login message
   Message login_msg;
   if (!conn->receive(login_msg)) {
-    // Didnt read
+    if (conn->get_last_result() == Connection::INVALID_MSG) {
+      conn->send(Message(TAG_ERR, "invalid message"));
+    }
     delete conn;
     delete info;
     return nullptr;
@@ -74,6 +76,13 @@ void chat_with_sender(Connection *conn, Server *server, const std::string &usern
   while (true) {
     Message msg;
     if (!conn->receive(msg)) {
+      if (conn->get_last_result() == Connection::INVALID_MSG) {
+        // Send error for invalid message and continue
+        if (!conn->send(Message(TAG_ERR, "invalid message"))) {
+          break;
+        }
+        continue;
+      }
       break;
     }
     
@@ -125,6 +134,10 @@ void chat_with_receiver(Connection *conn, Server *server, const std::string &use
   
   Message msg;
   if (!conn->receive(msg)) {
+    // check if was an invalid message
+    if (conn->get_last_result() == Connection::INVALID_MSG) {
+      conn->send(Message(TAG_ERR, "invalid message"));
+    }
     return;
   }
   
