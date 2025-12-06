@@ -1,4 +1,6 @@
 
 
 
-Our thread synchronization is implemented through...
+Our thread synchronization approach is that in the server multiple clients can have access to shared data structures, and each client runs in its own thread via the worker function. Using the m_lock pthread_mutex_t object we make sure only one thread can access the rooms map at a time, creating a guard with it and then unlocking m_lock when the guard goes out of scope. If two clients join the same room simultaneously, then because each client is in a detached thread and the m_lock is used, the same room will not be created twice, but will be created and then joined, establishing concurrency.
+Similarly hen a message is broadcasted to a room, the room's lock is put into a guard to make sure that each user's message queue recieves messages from one client at a time, in the same order, to prevent overwriting new messages. The room's lock also is applied when adding and deleting users to make sure the members list is safe, which altogether can prevent the issue of a user being deleted while broadcasting a message or modification of the members list while iterating over it.
+Together, the mutexes within the server and room allow our server to have safe thread synchronization where each client is its own detached thread.
